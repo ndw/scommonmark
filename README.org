@@ -33,5 +33,5 @@ of these options seems to have any effect in the 0.21.0 version of the
 CommonMark parser.
 
 The function returns a string. It *does not* parse the markup into a
-node. You can use the `parse-xml()` function in XSLT if you want to
+node. You can use the ~parse-xml()~ function in XSLT if you want to
 process the HTML with XSLT.
