@@ -1,0 +1,37 @@
+* Saxon CommonMark Processor
+:PROPERTIES:
+:CUSTOM_ID: top
+:END:
+
+This is a Saxon extension function that wraps the ~org.commonmark~ Markdown parser.
+
+In your stylesheet, declare the extension namespace:
+
+#+BEGIN_SRC xml
+<?xml version="1.0" encoding="utf-8"?>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+
+                xmlns:ext="http://nwalsh.com/xslt"
+
+                xmlns:xs="http://www.w3.org/2001/XMLSchema"
+                exclude-result-prefixes="ext xs"
+                version="3.0">
+#+END_SRC
+
+Then you can call the extension function:
+
+#+BEGIN_SRC xml
+<xsl:sequence select="ext:commonmark('This is *bold*', $options)"/>
+#+END_SRC
+
+You can use ~function-available()~ to code more defensively. The
+options map is a map from QName keys to values. Only two keys are
+recognized: ~escape-html~ and ~santize-urls~, both in no namespace.
+The default value for each is “false”. You can omit the second
+argument entirely if you’re happy with those defaults. Note: neither
+of these options seems to have any effect in the 0.21.0 version of the
+CommonMark parser.
+
+The function returns a string. It *does not* parse the markup into a
+node. You can use the `parse-xml()` function in XSLT if you want to
+process the HTML with XSLT.

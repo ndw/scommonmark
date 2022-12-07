@@ -1,0 +1,152 @@
+plugins {
+  id "java"
+  id "maven-publish"
+  id "signing"
+  id 'com.github.gmazzo.buildconfig' version "2.0.2"
+}
+
+sourceCompatibility=1.8
+targetCompatibility=1.8
+
+repositories {
+  mavenLocal()
+  mavenCentral()
+}
+
+configurations.all {
+  resolutionStrategy {
+    force 'xml-apis:xml-apis:1.4.01'
+  }
+}
+
+dependencies {
+  implementation (
+    [group: 'net.sf.saxon', name: 'Saxon-HE', version: saxonVersion],
+    [group: 'org.commonmark', name: 'commonmark', version: '0.21.0']
+  )
+  testImplementation (
+    [group: 'junit', name: 'junit', version: '4.13']
+  )
+}
+
+buildConfig {
+  packageName("com.nwalsh.commonmark")
+  buildConfigField('String', 'TITLE', "\"${scommonmarkTitle}\"")
+  buildConfigField('String', 'VERSION', "\"${scommonmarkVersion}\"")
+  buildConfigField('String', 'SAXON_VERSION', "\"${saxonVersion}\"")
+}
+
+jar {
+  archiveBaseName = "scommonmark-${scommonmarkVersion}"
+  manifest {
+    attributes "Built-By": "Norman Walsh"
+    attributes "Implementation-Vendor": "Norman Walsh"
+    attributes "Implementation-Title": "Saxon CommonMark Processor"
+    attributes "Implementation-Version": scommonmarkVersion
+  }
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+  classifier = 'javadoc'
+  from javadoc.destinationDir
+}
+
+task sourcesJar(type: Jar, dependsOn: ["generateBuildConfig"]) {
+  classifier = 'sources'
+  from sourceSets.main.allSource
+}
+
+task distCopyJar(type: Copy, dependsOn: ['jar']) {
+  from "${buildDir}/libs/${basename}-${scommonmarkVersion}.jar"
+  into "${buildDir}/${basename}-${scommonmarkVersion}/lib"
+  doFirst {
+    mkdir "${buildDir}/${basename}-${scommonmarkVersion}/lib"
+  }
+}
+
+task distCopyReadme(type: Copy) {
+  from "README.org"
+  into "${buildDir}/${basename}-${scommonmarkVersion}"
+  doFirst {
+    mkdir "${buildDir}/${basename}-${scommonmarkVersion}"
+  }
+}
+
+task zipDist(type: Zip,
+             dependsOn: ['distCopyReadme', 'distCopyJar']) {
+  from("${buildDir}/${basename}-${scommonmarkVersion}")
+  into "${basename}-${scommonmarkVersion}"
+  archiveFileName = "${basename}-${scommonmarkVersion}.zip"
+  doFirst {
+    mkdir "${buildDir}/distributions"
+  }
+}
+
+task dist(dependsOn: ['test', 'zipDist']) {
+  doLast {
+    println("Built dist for ${basename} version ${scommonmarkVersion}")
+  }
+}
+
+signing {
+  sign publishing.publications
+}
+
+publishing {
+  publications {
+    mavenJava(MavenPublication) {
+      pom {
+        name = 'Saxon CommonMark'
+        packaging = 'jar'
+        description = 'A CommonMark processor for Saxon'
+        url = 'https://github.com/ndw/scommonmark'
+
+        scm {
+          url = 'scm:git@github.com:ndw/scommonmark.git'
+          connection = 'scm:git@github.com:ndw/scommonmark.git'
+          developerConnection = 'scm:git@github.com:ndw/scommonmark.git'
+        }
+
+        licenses {
+          license {
+            name = 'Apache License version 2.0'
+            url = 'https://www.apache.org/licenses/LICENSE-2.0'
+            distribution = 'repo'
+          }
+        }
+
+        developers {
+          developer {
+            id = 'ndw'
+            name = 'Norman Walsh'
+          }
+        }
+      }
+
+      groupId = "com.nwalsh"
+      artifactId = "scommonmark"
+      version = scommonmarkVersion
+      from components.java
+      artifact javadocJar
+      artifact sourcesJar
+    }
+  }
+
+  repositories {
+    maven {
+      url = "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
+      credentials {
+        username = findProperty("sonatypeUsername") ?: ""
+        password = findProperty("sonatypePassword") ?: ""
+      }
+    }
+  }
+}
+
+// ============================================================
+
+task helloWorld() {
+  doLast {
+    println('Hello, world.')
+  }
+}
