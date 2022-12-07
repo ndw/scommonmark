@@ -52,10 +52,10 @@ jobs:
 
       - name: Publish tagged release
         uses: softprops/action-gh-release@v1
-        if: ${{ env.HAVE_ACCESS_TOKEN == 'true' && env.CI_BRANCH == 'master' && env.CI_TAG != '' }}
+        if: ${{ env.HAVE_ACCESS_TOKEN == 'true' && env.CI_BRANCH == 'main' && env.CI_TAG != '' }}
         with:
           draft: false
           prerelease: false
           fail_on_unmatched_files: true
           files: |
-            build/distributions/sinclude-${{ env.CI_TAG }}.zip
+            build/distributions/scommonmark-${{ env.CI_TAG }}.zip
