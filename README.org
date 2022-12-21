@@ -1,3 +1,12 @@
+:PROPERTIES:
+:ID:       761DE1ED-96B5-4DFB-8509-209F8D0E5477
+:END:
+#+title: Saxon CommonMark Processor
+#+author: Norm Tovey-Walsh
+#+options: html-style:nil h:6 toc:nil num:nil
+#+options: author:nil email:nil creator:nil timestamp:nil
+#+startup: showall
+
 * Saxon CommonMark Processor
 :PROPERTIES:
 :CUSTOM_ID: top
@@ -25,13 +34,43 @@ Then you can call the extension function:
 #+END_SRC
 
 You can use ~function-available()~ to code more defensively. The
-options map is a map from QName keys to values. Only two keys are
-recognized: ~escape-html~ and ~santize-urls~, both in no namespace.
-The default value for each is “false”. You can omit the second
-argument entirely if you’re happy with those defaults. Note: neither
-of these options seems to have any effect in the 0.21.0 version of the
+options map is a map from QName keys to values. Only three keys are
+recognized, all of them are in no-namespace:
+
++ escape-html :: boolean, enables the ~escapeHtml()~ option on the ~HtmlRenderer~
++ sanitize-urls :: boolean, enables the ~sanitizeUrls()~ option on the ~HtmlRenderer~
++ extensions :: list-of-strings, adds extensions to the parser
+
+The default value for each boolean option is “false” and an empty list
+for the extensions. You can omit the second argument entirely if
+you’re happy with those defaults. Note: neither ~escape-html~ or
+~sanitize-ruls~ seems to have any effect in the 0.21.0 version of the
 CommonMark parser.
 
 The function returns a string. It *does not* parse the markup into a
 node. You can use the ~parse-xml()~ function in XSLT if you want to
 process the HTML with XSLT.
+
+** Extensions
+:PROPERTIES:
+:CUSTOM_ID: extensions
+:END:
+
+The ~org.commonmark~ parser supports a number of extensions. You can use them
+by listing the full class name in the extensions property. For example:
+
+#+BEGIN_SRC xml
+<xsl:sequence
+    select="ext:commonmark($markdown,
+            map{
+              xs:QName('extensions'):
+                ('org.commonmark.ext.gfm.tables.TablesExtension',
+                 'org.commonmark.ext.gfm.strikethrough.StrikethroughExtension')})"/>
+#+END_SRC
+
+You must also make sure that the corresponding class is on your classpath.
+
+Initialization of the extension relies on the class providing a static
+method ~create()~ that returns an instance of ~Extension~. If you are
+trying to use an extension that has to be instantiated in some other
+way, it won’t work.
