@@ -7,11 +7,6 @@
 #+options: author:nil email:nil creator:nil timestamp:nil
 #+startup: showall
 
-* Saxon CommonMark Processor
-:PROPERTIES:
-:CUSTOM_ID: top
-:END:
-
 This is a Saxon extension function that wraps the ~org.commonmark~ Markdown parser.
 
 In your stylesheet, declare the extension namespace:
