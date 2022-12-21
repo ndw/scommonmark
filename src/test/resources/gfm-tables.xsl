@@ -14,9 +14,22 @@
 ```
 This is a pre.
 ```
+
+| Col 1 | Col 2  |
+| ----- | ------ |
+| This  | is     | 
+| a     | GitHub |
+| table |        |
+
 This is ~~more~~ _text_.</xsl:variable>
   <doc>
-    <xsl:sequence select="ext:commonmark($markdown)"/>
+    <xsl:sequence
+        select="ext:commonmark($markdown,
+                map{
+                  xs:QName('extensions'):
+                    ('org.commonmark.ext.gfm.tables.TablesExtension',
+                     'org.commonmark.ext.gfm.strikethrough.StrikethroughExtension'),
+                  xs:QName('sanitize-urls'): true()})"/>
   </doc>
 </xsl:template>
 

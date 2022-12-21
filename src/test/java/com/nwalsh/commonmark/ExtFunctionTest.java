@@ -3,6 +3,8 @@ package com.nwalsh.commonmark;
 import junit.framework.TestCase;
 import net.sf.saxon.Configuration;
 import net.sf.saxon.s9api.*;
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.xml.sax.InputSource;
 
@@ -11,13 +13,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
-public class ExtFunctionTest extends TestCase {
+public class ExtFunctionTest {
     private Processor processor = null;
     private XsltCompiler xsltCompiler = null;
     private XPathCompiler xpathCompiler = null;
     private DocumentBuilder builder = null;
 
-    @Override
+    @Before
     public void setUp() {
         processor = new Processor(false);
         Configuration config = processor.getUnderlyingConfiguration();
@@ -28,12 +30,28 @@ public class ExtFunctionTest extends TestCase {
     }
 
     @Test
-    public void testExtension() {
+    public void testCommonMark() {
         try {
             XdmNode node = applyStylesheet("src/test/resources/style.xsl", "src/test/resources/style.xsl");
             String text = node.getStringValue();
-            assertTrue(text.contains("<em>bold"));
-            assertTrue(text.contains("<pre><code>This"));
+            Assert.assertFalse(text.contains("<del>more</del>"));
+            Assert.assertTrue(text.contains("<em>bold"));
+            Assert.assertTrue(text.contains("<pre><code>This"));
+        } catch (SaxonApiException | FileNotFoundException sae) {
+            sae.printStackTrace();
+            TestCase.fail();
+        }
+    }
+
+    @Test
+    public void testGfmExtensions() {
+        try {
+            XdmNode node = applyStylesheet("src/test/resources/gfm-tables.xsl", "src/test/resources/gfm-tables.xsl");
+            String text = node.getStringValue();
+            Assert.assertTrue(text.contains("<table>"));
+            Assert.assertTrue(text.contains("<del>more</del>"));
+            Assert.assertTrue(text.contains("<em>bold"));
+            Assert.assertTrue(text.contains("<pre><code>This"));
         } catch (SaxonApiException | FileNotFoundException sae) {
             sae.printStackTrace();
             TestCase.fail();
