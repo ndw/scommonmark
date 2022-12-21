@@ -11,17 +11,17 @@ import net.sf.saxon.s9api.QName;
 import net.sf.saxon.trans.XPathException;
 import net.sf.saxon.tree.iter.AtomicIterator;
 import net.sf.saxon.type.BuiltInAtomicType;
-import net.sf.saxon.value.AtomicValue;
-import net.sf.saxon.value.QNameValue;
-import net.sf.saxon.value.SequenceType;
-import net.sf.saxon.value.StringValue;
+import net.sf.saxon.value.*;
+import org.commonmark.Extension;
 import org.commonmark.node.Node;
 import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class CommonMarkFunction extends ExtensionFunctionDefinition {
     private static final StructuredQName qName =
@@ -29,8 +29,9 @@ public class CommonMarkFunction extends ExtensionFunctionDefinition {
 
     private static final QName _escape_html = new QName("", "escape-html");
     private static final QName _sanitize_urls = new QName("", "sanitize-urls");
+    private static final QName _extensions = new QName("", "extensions");
 
-    HashMap<QName,String> options = new HashMap<>();
+    HashMap<QName,List<String>> options = new HashMap<>();
 
     @Override
     public StructuredQName getFunctionQName() {
@@ -79,20 +80,36 @@ public class CommonMarkFunction extends ExtensionFunctionDefinition {
             boolean escape = getBooleanOption(_escape_html, false);
             boolean sanitize = getBooleanOption(_sanitize_urls, false);
 
-            Parser parser = Parser.builder().build();
+            ArrayList<Extension> extensions = new ArrayList<>();
+            String className = null;
+            try {
+                String[] args = {};
+                if (options.containsKey(_extensions)) {
+                    for (String klass : options.get(_extensions)) {
+                        className = klass;
+                        Class clazz = Class.forName(klass);
+                        Method create = clazz.getMethod("create");
+                        extensions.add((Extension) create.invoke(null));
+                    }
+                }
+            } catch (ClassNotFoundException|NoSuchMethodException|IllegalAccessException|InvocationTargetException ex) {
+                throw new IllegalArgumentException("Failed to instantiate: " + className);
+            }
+
+            Parser parser = Parser.builder().extensions(extensions).build();
             Node document = parser.parse(markdown);
             HtmlRenderer.Builder builder = HtmlRenderer.builder();
             builder.escapeHtml(escape);
             builder.sanitizeUrls(sanitize);
-            HtmlRenderer renderer = builder.build();
+            HtmlRenderer renderer = builder.extensions(extensions).build();
             String html = renderer.render(document);
             return new StringValue(html);
         }
     }
 
     private boolean getBooleanOption(QName name, boolean defvalue) {
-        if (options.containsKey(name)) {
-            String value = options.get(name);
+        if (options.containsKey(name) && options.get(name).size() > 0) {
+            String value = options.get(name).get(0);
             if ("true".equals(value) || "false".equals(value)) {
                 return "true".equals(value);
             }
@@ -107,8 +124,8 @@ public class CommonMarkFunction extends ExtensionFunctionDefinition {
         return defvalue;
     }
 
-    private HashMap<QName,String> parseMap(MapItem item) throws XPathException {
-        HashMap<QName,String> options = new HashMap<>();
+    private HashMap<QName, List<String>> parseMap(MapItem item) throws XPathException {
+        HashMap<QName,List<String>> options = new HashMap<>();
 
         // The implementation of the keyValuePairs() method is incompatible between Saxon 10 and Saxon 11.
         // In order to avoid having to publish two versions of this class, we use reflection to
@@ -127,8 +144,19 @@ public class CommonMarkFunction extends ExtensionFunctionDefinition {
                     throw new IllegalArgumentException("Option map keys must be QNames");
                 }
 
-                AtomicValue value = (AtomicValue) get.invoke(item, next);
-                options.put(key, value.getStringValue());
+                ArrayList<String> values = new ArrayList<>();
+                Object rawValue = get.invoke(item, next);
+                if (rawValue instanceof SequenceExtent) {
+                    SequenceExtent seValue = (SequenceExtent) rawValue;
+                    for (int pos = 0; pos < seValue.getLength(); pos++) {
+                        AtomicValue value = (AtomicValue) seValue.itemAt(pos);
+                        values.add(value.getStringValue());
+                    }
+                } else {
+                    AtomicValue value = (AtomicValue) rawValue;
+                    values.add(value.getStringValue());
+                }
+                options.put(key, values);
                 next = aiter.next();
             }
         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ex) {
