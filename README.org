@@ -29,22 +29,65 @@ Then you can call the extension function:
 #+END_SRC
 
 You can use ~function-available()~ to code more defensively. The
-options map is a map from QName keys to values. Only three keys are
-recognized, all of them are in no-namespace:
+options map is a map from QName keys to values. Four keys are
+recognized:
 
 + escape-html :: boolean, enables the ~escapeHtml()~ option on the ~HtmlRenderer~
 + sanitize-urls :: boolean, enables the ~sanitizeUrls()~ option on the ~HtmlRenderer~
-+ extensions :: list-of-strings, adds extensions to the parser
++ ext:parser :: “xml”, “html”, or “none”; how to parse the result
++ ext:extensions :: list-of-strings, adds extensions to the Markdown parser
 
-The default value for each boolean option is “false” and an empty list
-for the extensions. You can omit the second argument entirely if
-you’re happy with those defaults. Note: neither ~escape-html~ or
-~sanitize-ruls~ seems to have any effect in the 0.21.0 version of the
-CommonMark parser.
+The default value for ~escape-html~ and ~sanitize-urls~ is “false”. (Neither
+option seems to have any effect in the 0.21.0 version of the CommonMark parser.)
 
-The function returns a string. It *does not* parse the markup into a
-node. You can use the ~parse-xml()~ function in XSLT if you want to
-process the HTML with XSLT.
+The default value for ~ext:parser~ is “xml”.
+
+The default value for ~ext:extensions~ is the empty sequence.
+
+You can omit the second argument entirely if you’re happy with those
+defaults.
+
+** Parser
+:PROPERTIES:
+:CUSTOM_ID: parser
+:END:
+
+The output from the Markdown parser is a string containing the derived HTML
+markup. You can further parse that as XML or HTML, to return an XDM node
+for further processing, or you can omit parsing and return the string.
+
+*** XML parsing
+:PROPERTIES:
+:CUSTOM_ID: parse-xml
+:END:
+
+If the parser is “xml”, the rendered HTML is parsed as XML (by ~fn:parse-xml~).
+If the first attempt to parse fails, a second attempt is made with a
+single ~<div>~ wrapped around the html. (In other words, if the CommonMark parse
+produces more than one top-level element, then they’re all wrapped in a “div” to
+make a well-formed XML document.)
+
+The resulting HTML will be in the XHTML namespace. 
+
+If the Markdown contains markup that’s intrinsically not well-formed, then it
+cannot be parsed as XML.
+
+*** HTML parsing
+:PROPERTIES:
+:CUSTOM_ID: parse-html
+:END:
+
+If the parser is “html”, the rendered HTML is parsed as HTML using the
+~nu.validator~ ~htmlparser~. This always produces well-formed results, by
+altering the markup if necessary. The top-level element returned is always
+~<html>~ in the XHTML namespace.
+
+*** No parsing
+:PROPERTIES:
+:CUSTOM_ID: parse-none
+:END:
+
+If the parser is “none”, the rendered HTML is returned as a string.
 
 ** Extensions
 :PROPERTIES:
@@ -58,14 +101,16 @@ by listing the full class name in the extensions property. For example:
 <xsl:sequence
     select="ext:commonmark($markdown,
             map{
-              xs:QName('extensions'):
+              xs:QName('ext:extensions'):
                 ('org.commonmark.ext.gfm.tables.TablesExtension',
                  'org.commonmark.ext.gfm.strikethrough.StrikethroughExtension')})"/>
 #+END_SRC
 
 You must also make sure that the corresponding class is on your classpath.
 
-Initialization of the extension relies on the class providing a static
-method ~create()~ that returns an instance of ~Extension~. If you are
-trying to use an extension that has to be instantiated in some other
-way, it won’t work.
+Initialization of each extension relies on the class providing a static
+method ~create()~ that returns an instance of ~Extension~. That’s the
+way all of the standard extensions from ~org.commonmark~ work.
+
+If you are trying to use an extension that has to be instantiated in
+some other way, it won’t work.
