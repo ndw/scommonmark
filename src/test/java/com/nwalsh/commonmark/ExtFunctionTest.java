@@ -14,18 +14,15 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
 public class ExtFunctionTest {
-    private Processor processor = null;
     private XsltCompiler xsltCompiler = null;
-    private XPathCompiler xpathCompiler = null;
     private DocumentBuilder builder = null;
 
     @Before
     public void setUp() {
-        processor = new Processor(false);
+        Processor processor = new Processor(false);
         Configuration config = processor.getUnderlyingConfiguration();
         config.registerExtensionFunction(new CommonMarkFunction());
         xsltCompiler = processor.newXsltCompiler();
-        xpathCompiler = processor.newXPathCompiler();
         builder = processor.newDocumentBuilder();
     }
 
@@ -52,6 +49,34 @@ public class ExtFunctionTest {
             Assert.assertTrue(text.contains("<del>more</del>"));
             Assert.assertTrue(text.contains("<em>bold"));
             Assert.assertTrue(text.contains("<pre><code>This"));
+        } catch (SaxonApiException | FileNotFoundException sae) {
+            sae.printStackTrace();
+            TestCase.fail();
+        }
+    }
+
+    @Test
+    public void testXmlParser() {
+        try {
+            XdmNode node = applyStylesheet("src/test/resources/style-xml.xsl", "src/test/resources/style-xml.xsl");
+            String text = node.toString();
+            Assert.assertFalse(text.contains("<html xmlns"));
+            Assert.assertTrue(text.contains("<div xmlns"));
+            Assert.assertTrue(text.contains("<em>text</em>"));
+        } catch (SaxonApiException | FileNotFoundException sae) {
+            sae.printStackTrace();
+            TestCase.fail();
+        }
+    }
+
+    @Test
+    public void testHtmlParser() {
+        try {
+            XdmNode node = applyStylesheet("src/test/resources/style-html.xsl", "src/test/resources/style-html.xsl");
+            String text = node.toString();
+            Assert.assertTrue(text.contains("<html xmlns"));
+            Assert.assertFalse(text.contains("<div xmlns"));
+            Assert.assertTrue(text.contains("<em>text</em>"));
         } catch (SaxonApiException | FileNotFoundException sae) {
             sae.printStackTrace();
             TestCase.fail();

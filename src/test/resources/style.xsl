@@ -16,7 +16,8 @@ This is a pre.
 ```
 This is ~~more~~ _text_.</xsl:variable>
   <doc>
-    <xsl:sequence select="ext:commonmark($markdown)"/>
+    <xsl:sequence select="ext:commonmark($markdown,
+                                         map{xs:QName('ext:parser'): 'none'})"/>
   </doc>
 </xsl:template>
 

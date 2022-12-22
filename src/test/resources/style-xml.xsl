@@ -14,22 +14,12 @@
 ```
 This is a pre.
 ```
-
-| Col 1 | Col 2  |
-| ----- | ------ |
-| This  | is     | 
-| a     | GitHub |
-| table |        |
-
 This is ~~more~~ _text_.</xsl:variable>
+
   <doc>
-    <xsl:sequence
-        select="ext:commonmark($markdown,
-                map{
-                  xs:QName('ext:parser'): 'none',
-                  xs:QName('ext:extensions'):
-                    ('org.commonmark.ext.gfm.tables.TablesExtension',
-                     'org.commonmark.ext.gfm.strikethrough.StrikethroughExtension')})"/>
+    <xdm>
+      <xsl:sequence select="ext:commonmark($markdown)"/>
+    </xdm>
   </doc>
 </xsl:template>
 
